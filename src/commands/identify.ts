@@ -1,11 +1,17 @@
 import { Command, flags } from "@oclif/command"
-import Gravity from "../lib/gravity"
+import Gravity, { GravityEnvironment } from "../lib/gravity"
 
 export default class Identify extends Command {
   static description = "Identify a Gravity resource by its BSON ID"
 
   static flags = {
     help: flags.help({ char: "h" }),
+    environment: flags.string({
+      char: "e",
+      description: "Desired Gravity environment",
+      options: Object.keys(GravityEnvironment),
+      default: GravityEnvironment.staging,
+    }),
   }
 
   static args = [{ name: "id" }]
@@ -17,9 +23,12 @@ export default class Identify extends Command {
   ]
 
   async run() {
-    const gravity = new Gravity()
-    const { args } = this.parse(Identify)
-    const { id } = args
+    const {
+      args: { id },
+      flags: { environment },
+    } = this.parse(Identify) as IdentifyOptions
+
+    const gravity = new Gravity(environment)
 
     const gravityPromises = Identify.collectionsToCheck.map(collection => {
       const resource = `${collection.endpoint}/${id}`
@@ -37,6 +46,15 @@ export default class Identify extends Command {
       const collections = Identify.collectionsToCheck.map(c => c.name)
       this.log(`Nothing found in: ${collections.join(", ")}`)
     }
+  }
+}
+
+interface IdentifyOptions {
+  args: {
+    id: string
+  }
+  flags: {
+    environment: GravityEnvironment
   }
 }
 
