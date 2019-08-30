@@ -1,19 +1,28 @@
 import netrc from "netrc-parser"
 import fetch from "node-fetch"
 
+export enum GravityEnvironment {
+  staging = "staging",
+  production = "production",
+}
+
 class Gravity {
   static HOSTS = {
-    staging: "stagingapi.artsy.net",
     production: "api.artsy.net",
+    staging: "stagingapi.artsy.net",
   }
+
+  /** Gravity environment against which to issue requests. */
+  environment: GravityEnvironment
 
   /** Gravity user access token obtained via oauth, and persisted via netrc. */
   token: string
 
-  constructor() {
+  constructor(environment: GravityEnvironment) {
     netrc.loadSync()
-    const creds = netrc.machines[Gravity.HOSTS.staging] // TODO: allow switching env
-    this.token = creds.password!
+    const credentials = netrc.machines[Gravity.HOSTS[environment]]
+    this.environment = environment
+    this.token = credentials && credentials.password!
   }
 
   async getAccessToken(credentials: Credentials) {
@@ -45,7 +54,7 @@ class Gravity {
   }
 
   url(endpoint: string): string {
-    const host = Gravity.HOSTS.staging
+    const host = Gravity.HOSTS[this.environment]
     return `https://${host}/${endpoint}`
   }
 }
